@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nature Words — Female Voice</title>
+
+<style>
+  :root {
+    --green: #24654f;
+    --pink: #c52279;
+    --ink: #193e34;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 24px 14px;
+    background: #f6f4eb;
+    color: var(--ink);
+    font-family: Arial, sans-serif;
+  }
+
+  main { max-width: 800px; margin: auto; }
+  header { text-align: center; }
+  h1 { font-size: clamp(32px, 6vw, 46px); }
+  p { line-height: 1.6; }
+
+  button, select {
+    min-height: 46px;
+    padding: 12px 16px;
+    border: 2px solid #dce4d7;
+    border-radius: 12px;
+    background: white;
+    color: var(--ink);
+    font: inherit;
+  }
+
+  button { cursor: pointer; font-weight: bold; }
+  button:disabled { cursor: default; }
+
+  button:focus-visible, select:focus-visible {
+    outline: 3px solid #e7a72c;
+    outline-offset: 3px;
+  }
+
+  .row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 20px 0;
+  }
+
+  .primary, .active {
+    background: var(--green);
+    border-color: var(--green);
+    color: white;
+  }
+
+  .card {
+    background: white;
+    border: 1px solid #dce4d7;
+    border-radius: 22px;
+    overflow: hidden;
+    box-shadow: 0 10px 28px #193e3412;
+  }
+
+  .picture {
+    position: relative;
+    background: #e5eee5;
+  }
+
+  img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 3 / 2;
+    object-fit: contain;
+  }
+
+  .badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    padding: 8px 12px;
+    border-radius: 20px;
+    background: #fffffff0;
+    font-size: 14px;
+    font-weight: bold;
+  }
+
+  .content { padding: 24px; text-align: center; }
+  .word { font-size: clamp(34px, 7vw, 48px); margin: 0; }
+  .pink, .sentence strong { color: var(--pink); }
+  .meaning, .sentence { font-size: 23px; }
+  .hint { color: #607366; }
+
+  .navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  .word-list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin: 24px 0;
+  }
+
+  .word-list .selected {
+    border-color: var(--green);
+    background: #eaf1e5;
+  }
+
+  .options { display: grid; gap: 12px; }
+  .options button { font-size: 24px; }
+
+  .correct {
+    background: #e4f5e8;
+    border-color: #298753;
+  }
+
+  .wrong {
+    background: #fff0e9;
+    border-color: #c16c4d;
+  }
+
+  .feedback { min-height: 32px; font-size: 20px; }
+
+  .progress {
+    height: 8px;
+    background: #dce5d6;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 20px 0;
+  }
+
+  .progress div {
+    height: 100%;
+    background: var(--green);
+    width: 0;
+  }
+
+  .result { text-align: center; padding: 40px 20px; }
+  .result h2 { font-size: 42px; }
+  .hidden { display: none !important; }
+
+  footer, #audioStatus {
+    text-align: center;
+    color: #607366;
+    line-height: 1.6;
+  }
+
+  @media (max-width: 540px) {
+    .content { padding: 20px 14px; }
+    .meaning, .sentence { font-size: 21px; }
+  }
+</style>
+</head>
+
+<body>
+<main>
+  <header>
+    <h1>🌿 Nature Words</h1>
+    <p>Look. Listen. Say.<br>12 words · Female voice · 12 questions</p>
+  </header>
+
+  <nav class="row" aria-label="Learning mode">
+    <button id="cardsTab" class="active" aria-pressed="true">Cards</button>
+    <button id="quizTab" aria-pressed="false">Quiz</button>
+  </nav>
+
+  <section id="cardsSection">
+    <div class="row">
+      <label for="groupSelect">Show:</label>
+      <select id="groupSelect">
+        <option value="all">All 12 words</option>
+        <option value="place">Places</option>
+        <option value="adjective">Describing words</option>
+      </select>
+    </div>
+
+    <article class="card">
+      <div class="picture">
+        <img id="cardImage" alt="">
+        <span id="cardBadge" class="badge"></span>
+      </div>
+
+      <div class="content">
+        <h2 id="cardWord" class="word"></h2>
+        <p id="flipHint" class="hint">What does it mean? Tap Flip.</p>
+
+        <div id="cardAnswer" class="hidden">
+          <p id="cardMeaning" class="meaning"></p>
+          <p id="cardSentence" class="sentence"></p>
+        </div>
+
+        <div class="row">
+          <button id="flipButton" class="primary"
+                  aria-expanded="false" aria-controls="cardAnswer">
+            ↻ Flip
+          </button>
+          <button id="hearWordButton">🔊 Hear word</button>
+          <button id="hearMeaningButton" class="hidden">🔊 Hear meaning</button>
+          <button id="hearSentenceButton" class="hidden">🔊 Hear sentence</button>
+        </div>
+      </div>
+    </article>
+
+    <div class="navigation">
+      <button id="backButton">← Back</button>
+      <strong id="cardCount"></strong>
+      <button id="nextButton">Next →</button>
+    </div>
+
+    <div id="wordList" class="word-list" aria-label="Choose a word"></div>
+  </section>
+
+  <section id="quizSection" class="hidden">
+    <div class="progress">
+      <div id="progressBar"></div>
+    </div>
+
+    <article id="quizCard" class="card">
+      <div class="picture">
+        <img id="quizImage" alt="Nature picture">
+        <span id="quizBadge" class="badge"></span>
+      </div>
+
+      <div class="content">
+        <h2 id="quizQuestion"></h2>
+        <div id="quizOptions" class="options"></div>
+        <p id="quizFeedback" class="feedback" role="status"></p>
+        <button id="quizNextButton" class="primary hidden">Next →</button>
+      </div>
+    </article>
+
+    <div id="quizResult" class="card result hidden">
+      <div style="font-size:60px">🌟</div>
+      <h2 id="scoreText"></h2>
+      <p id="resultMessage"></p>
+      <div class="row">
+        <button id="playAgainButton" class="primary">Play again</button>
+        <button id="learnAgainButton">Learn words</button>
+      </div>
+    </div>
+  </section>
+
+  <p id="audioStatus" role="status"></p>
+  <footer>
+    Tap 🔊 to hear a female voice.<br>
+    Voice availability depends on your device.
+  </footer>
+</main>
+
+<script>
+"use strict";
+
+const imageBase =
+  "https://land-features-flashcards-ms-wan.winniewansh.chatgpt.site/assets/";
+
+const words = [
+  {
+    word: "forest", type: "place", image: "forest",
+    meaning: "A place with many trees.",
+    sentence: "The forest is attractive.", highlight: "attractive"
+  },
+  {
+    word: "mountain", type: "place", image: "mountain",
+    meaning: "Very high land.",
+    sentence: "The mountain is wonderful.", highlight: "wonderful"
+  },
+  {
+    word: "lake", type: "place", image: "lake",
+    meaning: "Water with land all around it.",
+    sentence: "The lake is peaceful.", highlight: "peaceful"
+  },
+  {
+    word: "waterfall", type: "place", image: "waterfall",
+    meaning: "Water falling from a high place.",
+    sentence: "The waterfall looks amazing.", highlight: "amazing"
+  },
+  {
+    word: "stream", type: "place", image: "stream",
+    meaning: "A small flow of water.",
+    sentence: "The stream is beautiful.", highlight: "beautiful"
+  },
+  {
+    word: "valley", type: "place", image: "valley",
+    meaning: "Low land between hills or mountains.",
+    sentence: "The valley is popular with tourists.", highlight: "popular"
+  },
+  {
+    word: "attractive", type: "adjective", image: "forest",
+    meaning: "Nice to look at.",
+    sentence: "The forest is attractive.", highlight: "attractive"
+  },
+  {
+    word: "peaceful", type: "adjective", image: "lake",
+    meaning: "Quiet and calm.",
+    sentence: "The lake is peaceful.", highlight: "peaceful"
+  },
+  {
+    word: "amazing", type: "adjective", image: "waterfall",
+    meaning: "Very surprising and very good.",
+    sentence: "The waterfall looks amazing.", highlight: "amazing"
+  },
+  {
+    word: "beautiful", type: "adjective", image: "stream",
+    meaning: "Very pretty.",
+    sentence: "The stream is beautiful.", highlight: "beautiful"
+  },
+  {
+    word: "popular", type: "adjective", image: "valley",
+    meaning: "Liked by many people.",
+    sentence: "The valley is popular with tourists.", highlight: "popular"
+  },
+  {
+    word: "wonderful", type: "adjective", image: "mountain",
+    meaning: "Very good.",
+    sentence: "The mountain is wonderful.", highlight: "wonderful"
+  }
+];
+
+const $ = id => document.getElementById(id);
+
+let currentCards = [...words];
+let cardIndex = 0;
+let flipped = false;
+let quizWords = [];
+let questionIndex = 0;
+let score = 0;
+let answerLocked = false;
+let speechRequest = 0;
+
+// Browsers do not provide a standard voice-gender property.
+// Match known female English voice names instead.
+function chooseFemaleVoice(voices) {
+  const femaleNames =
+    /female|samantha|victoria|karen|moira|tessa|serena|susan|zira|hazel|sonia|libby|jenny|aria|michelle|joanna|salli|kimberly|kendra|nicole|olivia|natasha|catherine|allison|ava|\bamy\b|\bemma\b|\bana\b/i;
+
+  return voices
+    .filter(voice =>
+      /^en(?:[-_]|$)/i.test(voice.lang) &&
+      femaleNames.test(voice.name)
+    )
+    .sort((a, b) =>
+      Number(/^en-GB$/i.test(b.lang)) -
+      Number(/^en-GB$/i.test(a.lang))
+    )[0] || null;
+}
+
+function loadVoices() {
+  return new Promise(resolve => {
+    const synth = window.speechSynthesis;
+    const available = synth.getVoices();
+
+    if (available.length) {
+      resolve(available);
+      return;
+    }
+
+    let timer;
+
+    function finish() {
+      clearTimeout(timer);
+      synth.removeEventListener("voiceschanged", finish);
+      resolve(synth.getVoices());
+    }
+
+    synth.addEventListener("voiceschanged", finish);
+    timer = setTimeout(finish, 1500);
+  });
+}
+
+function stopSpeech() {
+  speechRequest++;
+
+  if ("speechSynthesis" in window) {
+    window.speechSynthesis.cancel();
+  }
+}
+
+async function speak(text) {
+  $("audioStatus").textContent = "";
+
+  if (!("speechSynthesis" in window)) {
+    $("audioStatus").textContent = "Try Chrome or Safari for sound.";
+    return;
+  }
+
+  stopSpeech();
+  const request = speechRequest;
+  const voices = await loadVoices();
+
+  if (request !== speechRequest) return;
+
+  const voice = chooseFemaleVoice(voices);
+
+  if (!voice) {
+    $("audioStatus").textContent =
+      "No English female voice is available. Please enable one on your device.";
+    return;
+  }
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.voice = voice;
+  utterance.lang = voice.lang;
+  utterance.rate = 0.75;
+  utterance.pitch = 1;
+  utterance.volume = 1;
+
+  utterance.onerror = event => {
+    if (!["canceled", "interrupted"].includes(event.error)) {
+      $("audioStatus").textContent =
+        "Please try again. Check your volume.";
+    }
+  };
+
+  window.speechSynthesis.speak(utterance);
+}
+
+function imageURL(item) {
+  return imageBase + item.image + "-clear.png";
+}
+
+function shuffle(items) {
+  const result = [...items];
+
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+
+  return result;
+}
+
+function showSection(section) {
+  stopSpeech();
+  $("audioStatus").textContent = "";
+
+  const cardsActive = section === "cards";
+
+  $("cardsSection").classList.toggle("hidden", !cardsActive);
+  $("quizSection").classList.toggle("hidden", cardsActive);
+  $("cardsTab").classList.toggle("active", cardsActive);
+  $("quizTab").classList.toggle("active", !cardsActive);
+  $("cardsTab").setAttribute("aria-pressed", String(cardsActive));
+  $("quizTab").setAttribute("aria-pressed", String(!cardsActive));
+}
+
+function renderSentence(item) {
+  const container = $("cardSentence");
+  const position = item.sentence.indexOf(item.highlight);
+  container.replaceChildren();
+
+  if (position < 0) {
+    container.textContent = item.sentence;
+    return;
+  }
+
+  container.append(document.createTextNode(
+    item.sentence.slice(0, position)
+  ));
+
+  const strong = document.createElement("strong");
+  strong.textContent = item.highlight;
+  container.append(strong);
+
+  container.append(document.createTextNode(
+    item.sentence.slice(position + item.highlight.length)
+  ));
+}
+
+function buildWordList() {
+  $("wordList").replaceChildren();
+
+  currentCards.forEach((item, index) => {
+    const button = document.createElement("button");
+    button.textContent = item.word;
+    button.classList.toggle("pink", item.type === "adjective");
+
+    button.onclick = () => {
+      cardIndex = index;
+      renderCard();
+    };
+
+    $("wordList").append(button);
+  });
+}
+
+function renderCard() {
+  stopSpeech();
+  flipped = false;
+
+  const item = currentCards[cardIndex];
+
+  $("cardImage").src = imageURL(item);
+  $("cardImage").alt = item.image;
+  $("cardWord").textContent = item.word;
+  $("cardWord").classList.toggle("pink", item.type === "adjective");
+
+  $("cardBadge").textContent =
+    item.type === "place" ? "PLACE" : "DESCRIBING WORD";
+
+  $("cardMeaning").textContent = item.meaning;
+  renderSentence(item);
+
+  $("cardCount").textContent =
+    (cardIndex + 1) + " / " + currentCards.length;
+
+  $("cardAnswer").classList.add("hidden");
+  $("flipHint").classList.remove("hidden");
+  $("hearMeaningButton").classList.add("hidden");
+  $("hearSentenceButton").classList.add("hidden");
+  $("flipButton").textContent = "↻ Flip";
+  $("flipButton").setAttribute("aria-expanded", "false");
+  $("audioStatus").textContent = "";
+
+  [...$("wordList").children].forEach((button, index) => {
+    button.classList.toggle("selected", index === cardIndex);
+    button.setAttribute("aria-pressed", String(index === cardIndex));
+  });
+}
+
+function flipCard() {
+  flipped = !flipped;
+
+  $("cardAnswer").classList.toggle("hidden", !flipped);
+  $("flipHint").classList.toggle("hidden", flipped);
+  $("hearMeaningButton").classList.toggle("hidden", !flipped);
+  $("hearSentenceButton").classList.toggle("hidden", !flipped);
+  $("flipButton").textContent = flipped ? "↻ Hide" : "↻ Flip";
+  $("flipButton").setAttribute("aria-expanded", String(flipped));
+}
+
+function changeCard(direction) {
+  cardIndex =
+    (cardIndex + direction + currentCards.length) % currentCards.length;
+  renderCard();
+}
+
+function startQuiz() {
+  showSection("quiz");
+  quizWords = shuffle(words);
+  questionIndex = 0;
+  score = 0;
+
+  $("quizCard").classList.remove("hidden");
+  $("quizResult").classList.add("hidden");
+  renderQuestion();
+}
+
+function renderQuestion() {
+  stopSpeech();
+  answerLocked = false;
+  const item = quizWords[questionIndex];
+
+  $("quizImage").src = imageURL(item);
+  $("quizBadge").textContent =
+    "QUESTION " + (questionIndex + 1) + " / " + quizWords.length;
+
+  $("progressBar").style.width =
+    (questionIndex / quizWords.length * 100) + "%";
+
+  $("quizQuestion").textContent = item.type === "place"
+    ? "What is it?"
+    : "Which word means “" + item.meaning + "”?";
+
+  $("quizQuestion").classList.toggle(
+    "pink", item.type === "adjective"
+  );
+
+  $("quizFeedback").textContent = "";
+  $("quizNextButton").classList.add("hidden");
+  $("quizOptions").replaceChildren();
+
+  const wrongAnswers = shuffle(words.filter(other =>
+    other.type === item.type && other.word !== item.word
+  )).slice(0, 2);
+
+  shuffle([item, ...wrongAnswers]).forEach(choice => {
+    const button = document.createElement("button");
+    button.textContent = choice.word;
+    button.onclick = () => checkAnswer(choice, button);
+    $("quizOptions").append(button);
+  });
+}
+
+function checkAnswer(choice, selectedButton) {
+  if (answerLocked) return;
+  answerLocked = true;
+
+  const item = quizWords[questionIndex];
+  const correct = choice.word === item.word;
+
+  if (correct) score++;
+
+  [...$("quizOptions").children].forEach(button => {
+    button.disabled = true;
+    if (button.textContent === item.word) {
+      button.classList.add("correct");
+    }
+  });
+
+  if (!correct) selectedButton.classList.add("wrong");
+
+  $("quizFeedback").textContent =
+    (correct ? "✓ Well done! " : "The answer is: ") +
+    item.word + ". " + item.meaning;
+
+  $("quizNextButton").textContent =
+    questionIndex === quizWords.length - 1 ? "See score ★" : "Next →";
+
+  $("quizNextButton").classList.remove("hidden");
+  speak(item.word);
+}
+
+function nextQuestion() {
+  questionIndex++;
+
+  if (questionIndex < quizWords.length) {
+    renderQuestion();
+    return;
+  }
+
+  stopSpeech();
+  $("progressBar").style.width = "100%";
+  $("quizCard").classList.add("hidden");
+  $("quizResult").classList.remove("hidden");
+  $("scoreText").textContent = score + " / " + quizWords.length;
+  $("resultMessage").textContent =
+    score === quizWords.length
+      ? "Excellent! You know all 12 words!"
+      : "Good try! Learn the words and play again.";
+}
+
+$("cardsTab").onclick = () => showSection("cards");
+$("quizTab").onclick = startQuiz;
+$("flipButton").onclick = flipCard;
+$("backButton").onclick = () => changeCard(-1);
+$("nextButton").onclick = () => changeCard(1);
+
+$("hearWordButton").onclick =
+  () => speak(currentCards[cardIndex].word);
+
+$("hearMeaningButton").onclick =
+  () => speak(currentCards[cardIndex].meaning);
+
+$("hearSentenceButton").onclick =
+  () => speak(currentCards[cardIndex].sentence);
+
+$("quizNextButton").onclick = nextQuestion;
+$("playAgainButton").onclick = startQuiz;
+$("learnAgainButton").onclick = () => showSection("cards");
+
+$("groupSelect").onchange = event => {
+  const group = event.target.value;
+
+  currentCards = group === "all"
+    ? [...words]
+    : words.filter(item => item.type === group);
+
+  cardIndex = 0;
+  buildWordList();
+  renderCard();
+};
+
+document.addEventListener("keydown", event => {
+  if (
+    $("cardsSection").classList.contains("hidden") ||
+    event.target !== document.body
+  ) return;
+
+  if (event.key === "ArrowLeft") changeCard(-1);
+  if (event.key === "ArrowRight") changeCard(1);
+});
+
+window.addEventListener("pagehide", stopSpeech);
+
+buildWordList();
+renderCard();
+</script>
+</body>
+</html>
